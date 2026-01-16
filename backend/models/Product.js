@@ -1,0 +1,15 @@
+import mongoose from "mongoose";
+
+const productSchema = new mongoose.Schema(
+  {
+    name: String,
+    price: Number,
+    image: String,
+    rating: Number,
+    discount: Number,
+    description: String,
+  },
+  { timestamps: true }
+);
+
+export default mongoose.model("Product", productSchema);
