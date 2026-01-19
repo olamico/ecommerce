@@ -5,65 +5,89 @@ const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
   const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-  const discountedPrice =
-    product.price - product.price * (product.discount / 100);
+  // 1. PRICE LOGIC (Prioritize promoPrice, then discount, then normal price)
+  let finalPrice = product.price;
+  let hasSale = false;
+
+  if (product.promoPrice && product.promoPrice > 0) {
+    finalPrice = product.promoPrice;
+    hasSale = true;
+  } else if (product.discount && product.discount > 0) {
+    finalPrice = product.price - (product.price * (product.discount / 100));
+    hasSale = true;
+  }
+
+  // Calculate percentage for the badge if not already set
+  const displayDiscount = product.discount > 0 
+    ? product.discount 
+    : Math.round(((product.price - finalPrice) / product.price) * 100);
+
+  const imageUrl = product.image && product.image.startsWith("http")
+    ? product.image
+    : `${backendUrl.replace(/\/$/, "")}/${product.image?.replace(/^\//, "")}`;
 
   return (
-    <div className="max-w-sm rounded-lg overflow-hidden shadow-lg bg-white border border-gray-200 transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-2xl hover:border-blue-300 cursor-pointer group">
-      {/* Image Section */}
-      <div className="relative h-40 w-full overflow-hidden bg-gray-100">
+    <div className="relative bg-white rounded-md shadow-sm hover:shadow-md transition-all border border-gray-100 flex flex-col h-full overflow-hidden group">
+      
+      {/* JUMIA-STYLE SALE BADGE */}
+      {hasSale && (
+        <div className="absolute top-2 left-2 z-10 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-sm shadow-sm">
+          -{displayDiscount}%
+        </div>
+      )}
+
+      {/* IMAGE SECTION */}
+      <div className="relative aspect-square bg-white p-2">
         <img
-          className="w-full h-full object-contain p-2 transition-transform duration-500 group-hover:scale-105"
-          src={
-            product.image && product.image.startsWith("http")
-              ? product.image
-              : `${backendUrl.replace(/\/$/, "")}/${product.image?.replace(
-                  /^\//,
-                  ""
-                )}`
-          }
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+          src={imageUrl}
           alt={product.name}
-          onError={(e) => {
-            e.target.src = "https://placehold.co/300?text=No+Image";
-          }}
+          onError={(e) => { e.target.src = "https://placehold.co/300?text=No+Image"; }}
         />
       </div>
 
-      {/* Details Section */}
-      <div className="px-6 py-4">
-        <div className="flex justify-between items-start">
-          <h3 className="font-bold text-xl mb-2 group-hover:text-blue-600 transition-colors">
-            {product.name}
-          </h3>
-          <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-            ★ {product.rating}
+      {/* DETAILS SECTION */}
+      <div className="p-3 flex flex-col flex-grow">
+        <h3 className="text-sm text-gray-700 font-medium line-clamp-2 h-10 mb-1">
+          {product.name}
+        </h3>
+
+        <div className="flex flex-col mb-1">
+          <span className="text-lg font-bold text-gray-900 leading-none">
+            ₦{finalPrice.toLocaleString()}
           </span>
-        </div>
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-          {product.description}
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl font-bold text-green-600">
-            ₦{discountedPrice.toFixed(2)}
-          </span>
-          {product.discount > 0 && (
-            <span className="text-sm text-gray-400 line-through">
-              ₦{product.price}
+          {hasSale && (
+            <span className="text-xs text-gray-400 line-through mt-1">
+              ₦{product.price.toLocaleString()}
             </span>
           )}
         </div>
-      </div>
 
-      {/* Action Section */}
-      <div className="px-6 pb-4">
+        {/* STOCK STATUS (From your countInStock field) */}
+        <div className="mb-2">
+           {product.countInStock <= 5 && product.countInStock > 0 ? (
+             <span className="text-[10px] text-red-500 font-medium">{product.countInStock} items left</span>
+           ) : product.countInStock === 0 ? (
+             <span className="text-[10px] text-gray-400 font-medium">Out of stock</span>
+           ) : null}
+        </div>
+
+        {/* ACTION BUTTON */}
         <button
           onClick={(e) => {
             e.stopPropagation();
-            addToCart(product);
+            if (product.countInStock > 0) {
+              addToCart({ ...product, price: finalPrice });
+            }
           }}
-          className="w-full bg-blue-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded transition-colors active:scale-95"
+          disabled={product.countInStock === 0}
+          className={`mt-auto w-full py-2 rounded text-[11px] font-bold uppercase transition-colors ${
+            product.countInStock === 0 
+            ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
+            : "bg-orange-500 hover:bg-orange-600 text-white"
+          }`}
         >
-          Add to Cart
+          {product.countInStock === 0 ? "Out of Stock" : "Add to Cart"}
         </button>
       </div>
     </div>
