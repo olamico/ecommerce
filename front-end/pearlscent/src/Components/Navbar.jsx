@@ -28,7 +28,7 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
           {/* 1. LOGO & HOME LINK */}
           <div className="flex justify-between items-center w-full md:w-auto">
             <Link to="/" className="text-2xl font-bold text-pink-600 italic">
-              Royal Pearl Scents
+              Soolworld Wholesale Hub
             </Link>
             <button
               className="md:hidden"
